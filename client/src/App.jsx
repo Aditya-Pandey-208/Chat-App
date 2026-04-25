@@ -96,7 +96,6 @@ function App() {
     setScreen("chat");
   };
 
-  // 🔥 FIXED DELETE
   const deleteRoom = (r) => {
     if (!rooms[r]) {
       setError("Room no longer exists");

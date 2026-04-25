@@ -12,18 +12,16 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-// 🔥 Rooms storage
 let rooms = {};
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // 🔥 JOIN ROOM
   socket.on("join_room", ({ username, room }) => {
     if (!rooms[room]) {
       rooms[room] = {
         users: 0,
-        createdBy: username, // 🔥 FIX: use username instead of socket.id
+        createdBy: username,
       };
     }
 
@@ -37,7 +35,6 @@ io.on("connection", (socket) => {
     io.emit("rooms_list", rooms);
   });
 
-  // 🔥 LEAVE ROOM
   socket.on("leave_room", (room) => {
     if (rooms[room]) {
       rooms[room].users--;
@@ -51,7 +48,6 @@ io.on("connection", (socket) => {
     io.emit("rooms_list", rooms);
   });
 
-  // 🔥 SEND MESSAGE
   socket.on("send_message", (data) => {
     const messageData = {
       room: data.room,
@@ -64,7 +60,6 @@ io.on("connection", (socket) => {
     io.to(data.room).emit("receive_message", messageData);
   });
 
-  // 🔥 DELETE ROOM (UPDATED)
   socket.on("delete_room", ({ room, username }) => {
     if (rooms[room] && rooms[room].createdBy === username) {
       console.log("Room deleted:", room);
@@ -79,7 +74,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 🔥 DISCONNECT HANDLING
   socket.on("disconnecting", () => {
     const joinedRooms = [...socket.rooms];
 
@@ -102,5 +96,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(3000, () => {
-  console.log("🚀 Server running on port 3000");
+  console.log("Server running on port 3000");
 });

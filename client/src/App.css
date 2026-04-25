@@ -2,23 +2,23 @@
 
 /* ================= MAIN CHAT ================= */
 
-/* 🔥 App container */
+/*  App container */
 .app-container {
   height: 100vh;
   display: flex;
   justify-content: center;
 }
 
-/* 🔥 Chat wrapper (WIDER NOW) */
+/*  Chat wrapper (WIDER NOW) */
 .chat-container {
   width: 100%;
   max-width: 900px;
-  height: 100vh; /* 🔥 THIS FIX */
+  height: 100vh; /*  THIS FIX */
   display: flex;
   flex-direction: column;
 }
 
-/* 🔥 FIXED HEADER */
+/*  FIXED HEADER */
 .header {
   position: sticky;
   top: 0;
@@ -37,7 +37,7 @@
   backdrop-filter: blur(10px);
 }
 
-/* 🔥 DARK MESSAGES BACKGROUND */
+/*  DARK MESSAGES BACKGROUND */
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -62,12 +62,12 @@
   justify-content: flex-start;
 }
 
-/* 🔥 MESSAGE BUBBLE */
+/*  MESSAGE BUBBLE */
 .message-bubble {
   font-family: 'Inter', sans-serif;
   padding: 18px 20px;
   border-radius: 18px;
-  max-width: 500px; /* 🔥 wider bubbles */
+  max-width: 500px; /*  wider bubbles */
 
   font-size: 19px;
   line-height: 1.6;
@@ -79,14 +79,14 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* 🔥 MY MESSAGE */
+/*  MY MESSAGE */
 .my-message {
   background: linear-gradient(135deg, #ff416c, #ff4b2b);
   color: white;
   border-bottom-right-radius: 6px;
 }
 
-/* 🔥 OTHER MESSAGE */
+/*  OTHER MESSAGE */
 .other-message {
   background: #334155;
   color: #e2e8f0;
@@ -111,7 +111,7 @@
   text-align: right;
 }
 
-/* 🔥 FIXED INPUT BAR (MATCH WIDTH) */
+/*  FIXED INPUT BAR (MATCH WIDTH) */
 .input-bar {
   position: fixed;
   bottom: 0;
@@ -211,7 +211,7 @@
   right: -50px;
 }
 
-/* 🔥 Join card (MATCH WIDTH) */
+/*  Join card (MATCH WIDTH) */
 .join-card {
   position: relative;
   background: rgba(255, 255, 255, 0.08);
@@ -222,7 +222,7 @@
   color: white;
 
   width: 100%;
-  max-width: 500px; /* 🔥 reduced from 900 */
+  max-width: 500px; /*  reduced from 900 */
 
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
   z-index: 1;
@@ -285,7 +285,7 @@
 }
 
 
-/* 🔥 HAMBURGER */
+/*  HAMBURGER */
 .hamburger {
   position: fixed;
   top: 18px;
@@ -305,7 +305,7 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
-/* 🔥 SIDEBAR CONTAINER */
+/* SIDEBAR CONTAINER */
 .sidebar {
   position: fixed;
   top: 0;
@@ -405,7 +405,7 @@
   color: white;
 }
 
-/* ================= NEW SCREENS UPGRADE ================= */
+/*NEW SCREENS UPGRADE */
 
 /* Shared card style (username + dashboard) */
 .join-card {
@@ -501,10 +501,10 @@
   text-align: center;
 }
 
-/* ================= SIDEBAR CREATE BUTTON ================= */
+/*SIDEBAR CREATE BUTTON */
 
 .sidebar .join-button {
-  margin-top: 20px;   /* 🔥 controlled spacing */
+  margin-top: 20px;
   margin-bottom: 10px;
 
   background: linear-gradient(135deg, #3b82f6, #6366f1);
@@ -514,7 +514,6 @@
   box-shadow: 0 0 12px #3b82f6;
 }
 
-/* ================= SMALL UI POLISH ================= */
 
 /* Smooth fade-in */
 .join-container,
