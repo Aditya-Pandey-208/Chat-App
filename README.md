@@ -27,31 +27,26 @@ The main idea was to understand how real-time communication works and how multip
 ##  How to run
 
 1. Clone the project
-git clone https://github.com/YOUR_USERNAME/Chat-App.git
-
-cd Chat-App
+   -> git clone https://github.com/YOUR_USERNAME/Chat-App.git
+   -> cd Chat-App
 
 2. Install dependencies
+   -> cd client
+   -> npm install
 
-
-cd client
-npm install
-
-cd ../server
-npm install
+   -> cd ../server 
+   -> npm install
 
 
 3. Run the project
 
-backend
+   backend
+    -> cd server
+    -> node index.js
 
-cd server
-node index.js
-
-frontend
-
-cd client
-npm run dev
+   frontend
+    -> cd client
+    -> npm run dev
 
 
 ---
