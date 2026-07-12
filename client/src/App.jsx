@@ -1,24 +1,49 @@
-import { useEffect, useState, useRef } from "react";
-import io from "socket.io-client";
+import { useEffect, useRef, useState } from "react";
+
 import "./App.css";
 
-const socket = io("http://localhost:3000");
+import UsernameScreen from "./components/auth/UsernameScreen";
+import ChatWindow from "./components/chat/ChatWindow";
+import Dashboard from "./components/rooms/Dashboard";
+import Sidebar from "./components/rooms/Sidebar";
+
+import { socket } from "./services/socket";
+
+const SCREENS = {
+  USERNAME: "username",
+  DASHBOARD: "dashboard",
+  CHAT: "chat",
+};
 
 function App() {
+
+  // USER
   const [username, setUsername] = useState("");
-  const [room, setRoom] = useState("");
-  const [screen, setScreen] = useState("username");
   const [socketId, setSocketId] = useState("");
+
+  // NAVIGATION
+  const [screen, setScreen] = useState(SCREENS.USERNAME);
+  const [room, setRoom] = useState("");
+
+  // CHAT
+  const [messages, setMessages] = useState({});
+  const [currentMessage, setCurrentMessage] = useState("");
+
+  // ROOMS
+  const [rooms, setRooms] = useState({});
+  const [myRooms, setMyRooms] = useState(new Set());
+  const [newRoomName, setNewRoomName] = useState("");
+
+  // UI
   const [error, setError] = useState("");
 
-  const [currentMessage, setCurrentMessage] = useState("");
-  const [messages, setMessages] = useState({});
-  const [rooms, setRooms] = useState({});
-  const [newRoomName, setNewRoomName] = useState("");
-  const [myRooms, setMyRooms] = useState(new Set());
-
+  // REFS
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const usernameRef = useRef("");
+  const roomRef = useRef("");
+
+  // SOCKET LISTENERS
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -32,14 +57,25 @@ function App() {
       }));
     });
 
-    socket.on("rooms_list", (data) => {
-      setRooms(data);
+    socket.on("rooms_list", (serverRooms) => {
+      setRooms(serverRooms);
+
+      // Synchronize myRooms by removing keys that no longer exist on the server
+      setMyRooms((prevMyRooms) => {
+        const updated = new Set(prevMyRooms);
+        for (const roomName of updated) {
+          if (!serverRooms[roomName]) {
+            updated.delete(roomName);
+          }
+        }
+        return updated;
+      });
     });
 
     socket.on("room_deleted", (deletedRoom) => {
-      if (deletedRoom === room) {
+      if (deletedRoom === roomRef.current) {
         setRoom("");
-        setScreen("dashboard");
+        setScreen(SCREENS.DASHBOARD);
       }
 
       setMyRooms((prev) => {
@@ -49,17 +85,65 @@ function App() {
       });
     });
 
+    socket.on("username_valid", () => {
+      setError("");
+      setScreen(SCREENS.DASHBOARD);
+    });
+
+    socket.on("username_error", (message) => {
+      setError(message);
+    });
+
+    socket.on("room_created", (roomName) => {
+      setMyRooms((prev) => {
+        const updated = new Set(prev);
+        updated.add(roomName);
+        return updated;
+      });
+
+      setNewRoomName("");
+
+      socket.emit("join_room", {
+        room: roomName,
+      });
+
+      setRoom(roomName);
+      setScreen(SCREENS.CHAT);
+    });
+
+    socket.on("room_error", (message) => {
+      setError(message);
+    });
+
     return () => {
       socket.off("connect");
       socket.off("receive_message");
       socket.off("rooms_list");
       socket.off("room_deleted");
+      socket.off("username_valid");
+      socket.off("username_error");
+      socket.off("room_created");
+      socket.off("room_error");
     };
-  }, [room]);
+  }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    usernameRef.current = username;
+  }, [username]);
+
+  useEffect(() => {
+    roomRef.current = room;
+  }, [room]);
+
+  // AUTO SCROLL
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, [messages, room]);
+
+  // ROOM FUNCTIONS
 
   const switchRoom = (newRoom) => {
     if (!username) {
@@ -67,12 +151,14 @@ function App() {
       return;
     }
 
-    if (room) socket.emit("leave_room", room);
+    if (room === newRoom) return;
 
-    socket.emit("join_room", { username, room: newRoom });
+    socket.emit("join_room", {
+      room: newRoom,
+    });
 
     setRoom(newRoom);
-    setScreen("chat");
+    setScreen(SCREENS.CHAT);
   };
 
   const createRoom = () => {
@@ -81,32 +167,29 @@ function App() {
       return;
     }
 
-    if (room) socket.emit("leave_room", room);
-
-    socket.emit("join_room", { username, room: newRoomName });
-
-    setMyRooms((prev) => {
-      const updated = new Set(prev);
-      updated.add(newRoomName);
-      return updated;
+    socket.emit("create_room", {
+      room: newRoomName,
     });
-
-    setRoom(newRoomName);
-    setNewRoomName("");
-    setScreen("chat");
   };
 
-  const deleteRoom = (r) => {
-    if (!rooms[r]) {
+  const deleteRoom = (roomName) => {
+    if (!rooms[roomName]) {
       setError("Room no longer exists");
       return;
     }
 
-    socket.emit("delete_room", { room: r, username });
+    socket.emit("delete_room", {
+      room: roomName,
+      username,
+    });
   };
 
+  // CHAT FUNCTIONS
+
   const sendMessage = () => {
-    if (!currentMessage.trim()) return;
+    if (!currentMessage.trim()) {
+      return;
+    }
 
     socket.emit("send_message", {
       room,
@@ -121,169 +204,54 @@ function App() {
     setCurrentMessage("");
   };
 
+  // RENDER
+
   return (
     <div className="app-container">
-
-      {/* SIDEBAR */}
-      {screen !== "username" && (
-        <div className="sidebar open">
-          <h3>Rooms</h3>
-
-          {/* OTHER ROOMS */}
-          {Object.keys(rooms)
-            .filter((r) => !myRooms.has(r))
-            .map((r) => (
-              <div
-                key={r}
-                className={`room-item ${room === r ? "active-room" : ""}`}
-                onClick={() => switchRoom(r)}
-              >
-                <span>{r} ({rooms[r].users})</span>
-              </div>
-          ))}
-
-          {/* MY ROOMS */}
-          {myRooms.size > 0 && (
-            <h4 style={{ marginTop: "20px" }}>My Rooms 👑</h4>
-          )}
-
-          {[...myRooms].map((r) => (
-            <div
-              key={r}
-              className={`room-item ${room === r ? "active-room" : ""}`}
-              onClick={() => switchRoom(r)}
-            >
-              <span>{r} ({rooms[r]?.users || 0})</span>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteRoom(r);
-                }}
-              >
-                ❌
-              </button>
-            </div>
-          ))}
-
-          <button className="join-button" onClick={() => setScreen("dashboard")}>
-            + Create Room
-          </button>
-        </div>
+      {screen !== SCREENS.USERNAME && (
+        <Sidebar
+          rooms={rooms}
+          myRooms={myRooms}
+          room={room}
+          switchRoom={switchRoom}
+          deleteRoom={deleteRoom}
+          setScreen={setScreen}
+        />
       )}
 
       <div className="chat-container">
-
-        {/* USERNAME */}
-        {screen === "username" && (
-          <div className="join-container">
-            <div className="join-card">
-              <h1>Enter Username</h1>
-
-              <input
-                className="join-input"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-
-              {error && <p className="error-text">{error}</p>}
-
-              <button
-                className="join-button"
-                onClick={() => {
-                  if (!username) {
-                    setError("Enter username");
-                    return;
-                  }
-                  setError("");
-                  setScreen("dashboard");
-                }}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
+        {screen === SCREENS.USERNAME && (
+          <UsernameScreen
+            username={username}
+            setUsername={setUsername}
+            error={error}
+            setError={setError}
+            setScreen={setScreen}
+          />
         )}
 
-        {/* DASHBOARD */}
-        {screen === "dashboard" && (
-          <div className="join-container">
-            <div className="join-card">
-              <h1>Welcome, {username}</h1>
-
-              <input
-                className="join-input"
-                placeholder="Enter room name"
-                value={newRoomName}
-                onChange={(e) => setNewRoomName(e.target.value)}
-              />
-
-              {error && <p className="error-text">{error}</p>}
-
-              <button className="join-button" onClick={createRoom}>
-                Create Room
-              </button>
-
-              <p style={{ marginTop: "15px" }}>
-                Or select a room from sidebar →
-              </p>
-            </div>
-          </div>
+        {screen === SCREENS.DASHBOARD && (
+          <Dashboard
+            username={username}
+            newRoomName={newRoomName}
+            setNewRoomName={setNewRoomName}
+            createRoom={createRoom}
+            error={error}
+          />
         )}
 
-        {/* CHAT */}
-        {screen === "chat" && (
-          <>
-            <div className="header">
-              <h2>Room: {room}</h2>
-            </div>
-
-            <div className="messages">
-              {(messages[room] || []).map((msg, i) => (
-                <div
-                  key={i}
-                  className={`message-row ${
-                    msg.username === username
-                      ? "message-right"
-                      : "message-left"
-                  }`}
-                >
-                  <div
-                    className={`message-bubble ${
-                      msg.username === username
-                        ? "my-message"
-                        : "other-message"
-                    }`}
-                  >
-                    <strong>{msg.username}</strong>
-                    {msg.message}
-                    <div>{msg.time}</div>
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="input-bar">
-              <input
-                ref={inputRef}
-                className="input-box"
-                placeholder="Type a message..."  // 🔥 FIXED
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === "Enter" && sendMessage()
-                }
-              />
-
-              <button className="send-btn" onClick={sendMessage}>
-                Send
-              </button>
-            </div>
-          </>
+        {screen === SCREENS.CHAT && (
+          <ChatWindow
+            room={room}
+            messages={messages}
+            socketId={socketId}
+            messagesEndRef={messagesEndRef}
+            currentMessage={currentMessage}
+            setCurrentMessage={setCurrentMessage}
+            sendMessage={sendMessage}
+            inputRef={inputRef}
+          />
         )}
-
       </div>
     </div>
   );
